@@ -1,24 +1,40 @@
 #!/bin/bash
 
-# 检查参数
-if [ $# -ne 2 ]; then
-  echo "用法: $0 <ID> <SECRET>"
-  echo "示例: $0 4a1pthbftlgm5is f76cyw6c9nc0kt6sp5ffcowlkwowo54h2bl6kglmap59q6h4"
+# 默认值
+NEWT_ID=""
+NEWT_SECRET=""
+
+# 解析参数
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --id)
+      NEWT_ID="$2"
+      shift 2
+      ;;
+    --secret)
+      NEWT_SECRET="$2"
+      shift 2
+      ;;
+    *)
+      echo "未知参数: $1"
+      exit 1
+      ;;
+  esac
+done
+
+# 校验参数
+if [[ -z "$NEWT_ID" || -z "$NEWT_SECRET" ]]; then
+  echo "用法: $0 --id <ID> --secret <SECRET>"
   exit 1
 fi
 
-NEWT_ID="$1"
-NEWT_SECRET="$2"
 NEWT_BIN="/usr/local/bin/newt"
 SERVICE_FILE="/etc/systemd/system/newt.service"
 
-# 下载并安装 newt
 echo "[+] 正在下载 newt..."
 wget -O "$NEWT_BIN" "https://github.com/fosrl/newt/releases/download/1.1.3/newt_linux_amd64"
 chmod +x "$NEWT_BIN"
-echo "[+] newt 下载并设置执行权限完成"
 
-# 写入 systemd 服务文件
 echo "[+] 正在创建 Systemd 服务..."
 cat <<EOF > "$SERVICE_FILE"
 [Unit]
@@ -34,7 +50,6 @@ User=root
 WantedBy=multi-user.target
 EOF
 
-# 启动服务
 echo "[+] 重新加载 systemd..."
 systemctl daemon-reexec
 systemctl daemon-reload
@@ -43,6 +58,5 @@ echo "[+] 启用并启动 newt 服务..."
 systemctl enable newt
 systemctl start newt
 
-# 显示服务状态
 echo "[+] 服务状态："
 systemctl status newt --no-pager
